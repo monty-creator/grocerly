@@ -1,5 +1,115 @@
-Grocerly by Movious :root { --bg: #0B0D10; --card: #151922; --accent: #6C7CFF; --text: #FFFFFF; --muted: #8A8FA3; --radius: 16px; --speed: 0.22s; } * { box-sizing: border-box; } body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; background: var(--bg); color: var(--text); } .app { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; } header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; } h1 { font-size: 26px; letter-spacing: -0.6px; margin: 0; } .tag { font-size: 11px; color: var(--muted); letter-spacing: 1px; } .input-row { display: flex; gap: 8px; margin-bottom: 10px; } input, select { flex: 1; padding: 14px; border-radius: var(--radius); border: none; font-size: 15px; background: var(--card); color: var(--text); } button { padding: 14px 18px; border-radius: var(--radius); border: none; background: var(--accent); color: white; font-size: 18px; cursor: pointer; transition: transform var(--speed) ease; } button:active { transform: scale(0.95); } .controls { display: flex; justify-content: space-between; margin: 14px 0 18px; font-size: 13px; color: var(--muted); } ul { list-style: none; padding: 0; margin: 0; } li { background: var(--card); padding: 14px 14px 14px 16px; border-radius: var(--radius); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: fadeIn var(--speed) ease; touch-action: pan-y; } li.done { opacity: 0.35; text-decoration: line-through; } .item-text { flex: 1; } .category { font-size: 11px; color: var(--accent); } .delete { font-size: 14px; opacity: 0.5; } footer { margin-top: 30px; font-size: 11px; color: var(--muted); text-align: center; } @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } } 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grocerly by Movious</title>
 
-<header> <div> <h1>Grocerly</h1> <div class="tag">BY MOVIOUS</div> </div> </header> <div class="input-row"> <input id="input" placeholder="Add item" list="suggestions" /> <datalist id="suggestions"></datalist> <select id="category"> <option>Produce</option> <option>Dairy</option> <option>Meat</option> <option>Bakery</option> <option>Other</option> </select> <button onclick="addItem()">+</button> </div> <div class="controls"> <span onclick="toggleHideDone()">Focus mode</span> <span onclick="shareList()">Share list</span> </div> <ul id="list"></ul> <footer>Designed for clarity. Built by Movious.</footer> 
+  <style>
+    :root{
+      --bg:#0B0D10;
+      --card:#151922;
+      --accent:#6C7CFF;
+      --text:#FFFFFF;
+      --muted:#8A8FA3;
+      --radius:16px;
+      --speed:.22s;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .app{
+      max-width:420px;
+      margin:0 auto;
+      padding:16px;
+    }
+    h1{
+      font-size:26px;
+      margin:8px 0 4px;
+    }
+    .by{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:16px;
+    }
+    .input-row{
+      display:flex;
+      gap:8px;
+    }
+    input,select{
+      flex:1;
+      padding:12px;
+      border-radius:var(--radius);
+      border:none;
+      background:var(--card);
+      color:var(--text);
+    }
+    button{
+      padding:12px 16px;
+      border:none;
+      border-radius:var(--radius);
+      background:var(--accent);
+      color:white;
+      font-weight:600;
+    }
+    ul{
+      list-style:none;
+      padding:0;
+      margin-top:16px;
+    }
+    li{
+      background:var(--card);
+      padding:14px;
+      border-radius:var(--radius);
+      margin-bottom:8px;
+    }
+  </style>
+</head>
 
-const input = document.getElementById('input'); const list = document.getElementById('list'); const categorySelect = document.getElementById('category'); const suggestions = document.getElementById('suggestions'); let hideDone = false; let items = JSON.parse(localStorage.getItem('grocerly-items')) || []; let history = JSON.parse(localStorage.getItem('grocerly-history')) || []; function vibrate() { if (navigator.vibrate) navigator.vibrate(20); } function save() { localStorage.setItem('grocerly-items', JSON.stringify(items)); localStorage.setItem('grocerly-history', JSON.stringify(history)); } function renderSuggestions() { suggestions.innerHTML = ''; history.slice(-20).forEach(item => { const option = document.createElement('option'); option.value = item; suggestions.appendChild(option); }); } function render() { list.innerHTML = ''; const sorted = [...items].sort((a, b) => a.category.localeCompare(b.category)); sorted.forEach(item => { if (hideDone && item.done) return; const index = items.indexOf(item); const li = document.createElement('li'); li.className = item.done ? 'done' : ''; let startX = 0; li.addEventListener('touchstart', e => startX = e.touches[0].clientX); li.addEventListener('touchend', e => { const diff = e.changedTouches[0].clientX - startX; if (diff > 80) toggle(index); if (diff < -80) removeItem(index); }); li.innerHTML = ` <div class="item-text"> ${item.text}<br /> <span class="category">${item.category}</span> </div> <span class="delete">⟷</span> `; list.appendChild(li); }); } function addItem() { const text = input.value.trim(); if (!text) return; if (!history.includes(text)) history.push(text); items.push({ text, category: categorySelect.value, done: false }); input.value = ''; vibrate(); save(); render(); renderSuggestions(); } function toggle(index) { items[index].done = !items[index].done; vibrate(); save(); render(); } function removeItem(index) { items.splice(index, 1); vibrate(); save(); render(); } function toggleHideDone() { hideDone = !hideDone; render(); } function shareList() { const text = items.filter(i => !i.done).map(i => `- ${i.text}`).join('\n'); if (navigator.share) { navigator.share({ title: 'Grocerly List', text }); } else { alert(text); } } render(); renderSuggestions(); 
+<body>
+  <div class="app">
+    <h1>Grocerly</h1>
+    <div class="by">BY MOVIOUS</div>
+
+    <div class="input-row">
+      <input id="input" placeholder="Add item" />
+      <button onclick="addItem()">+</button>
+    </div>
+
+    <ul id="list"></ul>
+  </div>
+
+  <script>
+    const input = document.getElementById("input");
+    const list = document.getElementById("list");
+    const items = JSON.parse(localStorage.getItem("grocerly")) || [];
+
+    function save(){
+      localStorage.setItem("grocerly", JSON.stringify(items));
+    }
+
+    function render(){
+      list.innerHTML="";
+      items.forEach(i=>{
+        const li=document.createElement("li");
+        li.textContent=i;
+        list.appendChild(li);
+      });
+    }
+
+    function addItem(){
+      if(!input.value.trim()) return;
+      items.push(input.value.trim());
+      input.value="";
+      save();
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
