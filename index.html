@@ -1,115 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grocerly by Movious</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocerly by Movious</title>
 
-  <style>
-    :root{
-      --bg:#0B0D10;
-      --card:#151922;
-      --accent:#6C7CFF;
-      --text:#FFFFFF;
-      --muted:#8A8FA3;
-      --radius:16px;
-      --speed:.22s;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .app{
-      max-width:420px;
-      margin:0 auto;
-      padding:16px;
-    }
-    h1{
-      font-size:26px;
-      margin:8px 0 4px;
-    }
-    .by{
-      color:var(--muted);
-      font-size:12px;
-      margin-bottom:16px;
-    }
-    .input-row{
-      display:flex;
-      gap:8px;
-    }
-    input,select{
-      flex:1;
-      padding:12px;
-      border-radius:var(--radius);
-      border:none;
-      background:var(--card);
-      color:var(--text);
-    }
-    button{
-      padding:12px 16px;
-      border:none;
-      border-radius:var(--radius);
-      background:var(--accent);
-      color:white;
-      font-weight:600;
-    }
-    ul{
-      list-style:none;
-      padding:0;
-      margin-top:16px;
-    }
-    li{
-      background:var(--card);
-      padding:14px;
-      border-radius:var(--radius);
-      margin-bottom:8px;
-    }
-  </style>
+<style>
+:root{
+  --bg:#0B0D10;
+  --card:#151922;
+  --accent:#6C7CFF;
+  --text:#FFFFFF;
+  --muted:#8A8FA3;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--bg);
+  color:var(--text);
+}
+.app{
+  max-width:420px;
+  margin:auto;
+  padding:16px;
+}
+h1{margin:6px 0}
+.by{color:var(--muted);font-size:12px;margin-bottom:12px}
+
+.top{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+select,input{
+  flex:1;
+  padding:12px;
+  border-radius:var(--radius);
+  border:none;
+  background:var(--card);
+  color:var(--text);
+}
+button{
+  padding:12px 14px;
+  border:none;
+  border-radius:var(--radius);
+  background:var(--accent);
+  color:white;
+  font-weight:600;
+}
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+ul{list-style:none;padding:0;margin-top:16px}
+li{
+  background:var(--card);
+  padding:16px;
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  transition:.25s;
+}
+li.done{
+  opacity:.5;
+  text-decoration:line-through;
+}
+li .cat{
+  font-size:11px;
+  color:var(--muted);
+}
+.focus li{
+  font-size:22px;
+  padding:20px;
+}
+</style>
 </head>
 
 <body>
-  <div class="app">
-    <h1>Grocerly</h1>
-    <div class="by">BY MOVIOUS</div>
+<div class="app">
+  <h1>Grocerly</h1>
+  <div class="by">BY MOVIOUS</div>
 
-    <div class="input-row">
-      <input id="input" placeholder="Add item" />
-      <button onclick="addItem()">+</button>
-    </div>
-
-    <ul id="list"></ul>
+  <div class="top">
+    <select id="listSelect"></select>
+    <button onclick="newList()">＋</button>
   </div>
 
-  <script>
-    const input = document.getElementById("input");
-    const list = document.getElementById("list");
-    const items = JSON.parse(localStorage.getItem("grocerly")) || [];
+  <div class="top">
+    <input id="input" placeholder="Add item">
+    <select id="category">
+      <option>Produce</option>
+      <option>Dairy</option>
+      <option>Meat</option>
+      <option>Snacks</option>
+      <option>Drinks</option>
+      <option>Other</option>
+    </select>
+    <button onclick="addItem()">+</button>
+  </div>
 
-    function save(){
-      localStorage.setItem("grocerly", JSON.stringify(items));
-    }
+  <div class="actions">
+    <button onclick="clearDone()">Clear bought</button>
+    <button onclick="share()">Share</button>
+    <button onclick="toggleFocus()">Focus</button>
+  </div>
 
-    function render(){
-      list.innerHTML="";
-      items.forEach(i=>{
-        const li=document.createElement("li");
-        li.textContent=i;
-        list.appendChild(li);
-      });
-    }
+  <ul id="list"></ul>
+</div>
 
-    function addItem(){
-      if(!input.value.trim()) return;
-      items.push(input.value.trim());
-      input.value="";
-      save();
-      render();
-    }
+<script>
+let data = JSON.parse(localStorage.getItem("grocerly_full")) || {
+  current:"Home",
+  lists:{Home:[]}
+};
 
-    render();
-  </script>
+const input=inputEl();
+const listEl=document.getElementById("list");
+const listSelect=document.getElementById("listSelect");
+const cat=document.getElementById("category");
+
+function inputEl(){return document.getElementById("input");}
+
+function save(){
+  localStorage.setItem("grocerly_full",JSON.stringify(data));
+}
+
+function renderLists(){
+  listSelect.innerHTML="";
+  Object.keys(data.lists).forEach(l=>{
+    let o=document.createElement("option");
+    o.value=o.text=l;
+    if(l===data.current) o.selected=true;
+    listSelect.appendChild(o);
+  });
+}
+
+listSelect.onchange=()=>{
+  data.current=listSelect.value;
+  save(); render();
+};
+
+function newList(){
+  let n=prompt("List name?");
+  if(!n) return;
+  data.lists[n]=[];
+  data.current=n;
+  save(); renderLists(); render();
+}
+
+function render(){
+  listEl.innerHTML="";
+  data.lists[data.current].forEach((it,i)=>{
+    let li=document.createElement("li");
+    if(it.done) li.classList.add("done");
+    li.innerHTML=`${it.text}<div class="cat">${it.cat}</div>`;
+    li.onclick=()=>{it.done=!it.done;save();render();};
+
+    let sx=0;
+    li.ontouchstart=e=>sx=e.touches[0].clientX;
+    li.ontouchend=e=>{
+      if(e.changedTouches[0].clientX-sx<-80){
+        data.lists[data.current].splice(i,1);
+        save();render();
+      }
+    };
+    listEl.appendChild(li);
+  });
+}
+
+function addItem(){
+  if(!input.value.trim()) return;
+  data.lists[data.current].push({
+    text:input.value.trim(),
+    cat:cat.value,
+    done:false
+  });
+  input.value="";
+  save();render();
+}
+
+function clearDone(){
+  data.lists[data.current]=data.lists[data.current].filter(i=>!i.done);
+  save();render();
+}
+
+function share(){
+  let txt=data.lists[data.current].map(i=>`• ${i.text}`).join("\n");
+  navigator.share?navigator.share({title:"Grocerly",text:txt}):alert(txt);
+}
+
+function toggleFocus(){
+  document.body.classList.toggle("focus");
+}
+
+renderLists();
+render();
+</script>
 </body>
 </html>
